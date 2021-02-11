@@ -1,0 +1,65 @@
+image:
+  - Ubuntu
+  - Visual Studio 2015
+  
+skip_commits:
+  files:
+    - README.md
+    - .travis.yml
+    - .gitignore
+    #- LICENSE
+  
+branches:
+  only:
+    - master
+    
+install:
+  - cmd: set QT_LICENSES=C:\Qt\Licenses
+  - cmd: set QTDIR=C:\Qt\5.13\mingw73_32
+  - cmd: set QT_TOOLS_DIR=C:\Qt\Tools\mingw730_32\ 
+  - cmd: set PATH=%QTDIR%\bin;C:\Qt\Tools\mingw730_32\bin;%PATH%
+  - sh: PATH=$HOME/Qt/5.14.2/gcc_64/bin:$PATH
+  - sh: sudo apt-get install -y libgl-dev
+  - qmake -v
+  
+build_script:
+  - cmd: qmake 
+  - cmd: mingw32-make
+  - sh: qmake CONFIG+="debug" QMAKE_LFLAGS+="--coverage" QMAKE_CXXFLAGS+="--coverage"
+  - sh: make
+  
+after_build:
+  - cmd: mkdir Base64Coder
+  - cmd: mv release/Base64Coder.exe Base64Coder
+  - cmd: windeployqt Base64Coder/Base64Coder.exe
+  - cmd: dir
+  - cmd: dir Base64Coder
+  - sh: ls
+  #- sh: cp LICENSE bin
+  #- sh: cp README.md bin
+  #- sh: cp -r bin Base64Coder
+
+test_script:
+  - cmd: qmake 
+  - cmd: mingw32-make check
+  - sh: make check
+  - sh: bash <(curl -s https://codecov.io/bash) -v
+  
+#Note: artifacts path should be from root directory
+artifacts:
+  - path: Base64Coder
+    type: zip
+
+deploy: 
+  release: Base64Coder-$(APPVEYOR_REPO_TAG_NAME)
+  tag: $(APPVEYOR_REPO_TAG_NAME)
+  description: 'Release description'
+  provider: GitHub
+  auth_token: # your encrypted token from GitHub
+    secure: 5c6ifu7R/0JzCAHg9PIxYsWvkc93jD6LZeAUmVoE8TxSMb8953FlsdJwNTzM30XN
+  artifact: Base64Coder.zip 
+  force_update: true
+  draft: false
+  prerelease: false
+  on:
+    APPVEYOR_REPO_TAG: true
